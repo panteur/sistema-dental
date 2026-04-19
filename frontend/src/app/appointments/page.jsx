@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import Link from 'next/link'
-import { format, addDays, isToday } from 'date-fns'
+import { format, addDays, addMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, isToday } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { formatRut, validateRut, cleanRut, formatPhone, formatPhoneForDB } from '@/utils/rut'
 
@@ -20,7 +20,14 @@ export default function AppointmentPage() {
   const [availableSlots, setAvailableSlots] = useState([])
   const [loadingSlots, setLoadingSlots] = useState(false)
   const [slotsError, setSlotsError] = useState('')
-  
+  const [selectedMonth, setSelectedMonth] = useState(new Date())
+
+  const months = Array.from({ length: 3 }, (_, i) => addMonths(new Date(), i))
+  const monthDays = eachDayOfInterval({
+    start: startOfMonth(selectedMonth),
+    end: endOfMonth(selectedMonth)
+  }).filter(d => d.getDay() !== 0 && d >= new Date())
+
   const [patientData, setPatientData] = useState({
     dni: '',
     name: '',
@@ -40,12 +47,13 @@ export default function AppointmentPage() {
   }, [])
 
   useEffect(() => {
-    if (selectedDentist && selectedDate && selectedService) {
-      loadSlots()
-    } else if (selectedDentist && selectedDate) {
-      loadSlots()
-    }
-  }, [selectedDentist, selectedDate, selectedService])
+    const handler = setTimeout(() => {
+      if (selectedDate && selectedMonth && selectedDentist) {
+        loadSlots()
+      }
+    }, 300)
+    return () => clearTimeout(handler)
+  }, [selectedDate, selectedMonth, selectedDentist, selectedService])
 
   const loadInitialData = async () => {
     setLoading(true)
@@ -138,13 +146,7 @@ export default function AppointmentPage() {
     setSubmitting(false)
   }
 
-  const dates = []
-  for (let i = 0; i < 14; i++) {
-    const d = addDays(new Date(), i)
-    if (d.getDay() !== 0) {
-      dates.push(d)
-    }
-  }
+  const dates = monthDays
 
   const selectedServiceData = services.find(s => s.id === selectedService)
   const selectedDentistData = dentists.find(d => d.id === selectedDentist)
@@ -356,23 +358,45 @@ export default function AppointmentPage() {
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
               <h2 className="text-lg font-bold text-slate-900 mb-4">Seleccione fecha y hora</h2>
               
+              {/* Month selector */}
+              <div className="mb-4">
+                <label className="block text-sm font-semibold text-slate-700 mb-2">Mes</label>
+                <div className="flex gap-2">
+                  {months.map((month) => (
+                    <button
+                      key={month.toISOString()}
+                      onClick={() => setSelectedMonth(month)}
+                      className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-semibold transition-all ${
+                        isSameMonth(month, selectedMonth)
+                          ? 'bg-sky-600 text-white shadow-lg shadow-sky-500/30'
+                          : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                      }`}
+                    >
+                      {format(month, 'MMMM yyyy', { locale: es })}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* Date picker */}
               <div className="mb-6">
                 <label className="block text-sm font-semibold text-slate-700 mb-3">Fecha</label>
-                <div className="grid grid-cols-4 md:grid-cols-7 gap-2">
-                  {dates.map((date) => (
+                <div className="grid grid-cols-7 gap-1.5">
+                  {monthDays.map((date) => (
                     <button
                       key={date.toISOString()}
                       onClick={() => { setSelectedDate(date); setSelectedTime(null); setAvailableSlots([]) }}
-                      className={`p-3 rounded-xl text-center transition-all ${
-                        selectedDate?.toDateString() === date.toDateString()
+                      disabled={date < new Date()}
+                      className={`p-2 rounded-lg text-center text-xs transition-all ${
+                        isSameDay(date, selectedDate)
                           ? 'bg-sky-600 text-white shadow-lg shadow-sky-500/30'
-                          : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-                      } ${isToday(date) ? 'ring-2 ring-sky-400 ring-offset-1' : ''}`}
+                          : date < new Date()
+                            ? 'bg-slate-50 text-slate-300 cursor-not-allowed'
+                            : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                      } ${isToday(date) && date >= new Date() ? 'ring-2 ring-sky-400 ring-offset-1' : ''}`}
                     >
-                      <p className="text-[10px] uppercase font-semibold tracking-wide">{format(date, 'EEE', { locale: es })}</p>
-                      <p className="text-lg font-bold mt-0.5">{format(date, 'd')}</p>
-                      <p className="text-[10px] opacity-70">{format(date, 'MMM')}</p>
+                      <p className="font-bold">{format(date, 'EEE', { locale: es })}</p>
+                      <p className="text-lg font-extrabold mt-0.5">{format(date, 'd')}</p>
                     </button>
                   ))}
                 </div>

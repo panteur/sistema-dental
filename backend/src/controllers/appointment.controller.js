@@ -1,4 +1,5 @@
 const Appointment = require('../models/appointment.model');
+const Patient = require('../models/patient.model');
 const { STATUS, APPOINTMENT_TYPES } = require('../config/constants');
 const { AppError } = require('../middleware/error.middleware');
 const emailService = require('../services/email.service');
@@ -198,6 +199,75 @@ class AppointmentController {
 
       const appointments = await Appointment.findAll({ dentist_id, date });
       res.json({ appointments });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async createWithPatient(req, res, next) {
+    try {
+      const { 
+        dni, 
+        patient_name, 
+        patient_last_name, 
+        patient_email, 
+        patient_phone, 
+        patient_address,
+        patient_date_of_birth,
+        patient_gender,
+        dentist_id, 
+        service_id, 
+        date, 
+        time, 
+        duration, 
+        type, 
+        notes 
+      } = req.body;
+
+      let patient_id;
+      const existingPatient = await Patient.findByDni(dni);
+      
+      if (existingPatient) {
+        patient_id = existingPatient.id;
+      } else {
+        patient_id = await Patient.create({
+          dni,
+          name: patient_name,
+          last_name: patient_last_name,
+          email: patient_email || null,
+          phone: patient_phone,
+          address: patient_address || null,
+          date_of_birth: patient_date_of_birth || null,
+          gender: patient_gender || null
+        });
+      }
+
+      const Service = require('../models/service.model');
+      const service = await Service.findById(service_id);
+      const serviceDuration = duration || (service?.duration || 30);
+
+      const isAvailable = await Appointment.checkAvailability(dentist_id, date, time, serviceDuration);
+      if (!isAvailable) {
+        throw new AppError('El horario no está disponible', 400);
+      }
+
+      const appointmentId = await Appointment.create({
+        patient_id,
+        dentist_id,
+        service_id,
+        date,
+        time,
+        duration: serviceDuration,
+        type: type || APPOINTMENT_TYPES.NEW,
+        notes
+      });
+
+      const appointment = await Appointment.findById(appointmentId);
+      res.status(201).json({ 
+        message: 'Cita creada', 
+        appointment,
+        patient: existingPatient ? null : { id: patient_id, dni, name: patient_name, last_name: patient_last_name }
+      });
     } catch (error) {
       next(error);
     }

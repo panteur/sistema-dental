@@ -24,7 +24,7 @@ class Appointment {
   static async findById(id) {
     const appointments = await query(
       `SELECT a.*, 
-              p.name as patient_name, p.last_name as patient_last_name, p.phone as patient_phone, p.dni as patient_dni, p.email as patient_email,
+              p.name as patient_name, p.last_name as patient_last_name, p.phone as patient_phone, p.rut as patient_dni, p.email as patient_email,
               u.name as dentist_name, u.specialty as dentist_specialty,
               s.name as service_name, s.price as service_price, s.duration as service_duration
        FROM appointments a

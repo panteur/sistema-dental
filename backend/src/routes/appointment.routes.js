@@ -30,6 +30,21 @@ router.post('/',
   AppointmentController.create
 );
 
+router.post('/with-patient',
+  isAdminOrDentistOrReceptionist,
+  validate([
+    body('dni').notEmpty().withMessage('DNI es requerido'),
+    body('patient_name').notEmpty().withMessage('Nombre del paciente es requerido'),
+    body('patient_last_name').notEmpty().withMessage('Apellido del paciente es requerido'),
+    body('patient_phone').notEmpty().withMessage('Teléfono es requerido'),
+    body('dentist_id').isInt(),
+    body('service_id').isInt(),
+    body('date').isDate(),
+    body('time').matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)
+  ]),
+  AppointmentController.createWithPatient
+);
+
 router.put('/:id',
   isAdminOrDentistOrReceptionist,
   validate([param('id').isInt()]),

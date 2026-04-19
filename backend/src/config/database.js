@@ -26,7 +26,9 @@ const testConnection = async () => {
 };
 
 const query = async (sql, params) => {
-  const [results] = await pool.execute(sql, params);
+  // Replace undefined values with null to avoid mysql2 errors
+  const safeParams = params ? params.map(p => p === undefined ? null : p) : [];
+  const [results] = await pool.query(sql, safeParams);
   return results;
 };
 

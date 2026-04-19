@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useAuth } from '@/context/AuthContext'
-import { format, addDays } from 'date-fns'
+import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths } from 'date-fns'
 import { es } from 'date-fns/locale'
 import CalendarView from '@/components/CalendarView'
 
@@ -45,8 +45,14 @@ function RescheduleModal({ apt, onClose, onSave, api }) {
   const [loadingSlots, setLoadingSlots] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [selectedMonth, setSelectedMonth] = useState(new Date())
 
-  const dates = Array.from({ length: 14 }, (_, i) => addDays(new Date(), i)).filter(d => d.getDay() !== 0)
+  const months = Array.from({ length: 3 }, (_, i) => addMonths(new Date(), i))
+
+  const monthDays = eachDayOfInterval({
+    start: startOfMonth(selectedMonth),
+    end: endOfMonth(selectedMonth)
+  }).filter(d => d.getDay() !== 0 && d >= new Date())
 
   const loadSlots = async (date) => {
     setLoadingSlots(true)
@@ -117,20 +123,40 @@ function RescheduleModal({ apt, onClose, onSave, api }) {
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2">Nueva fecha</label>
-            <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
-              {dates.map((date) => (
+            <label className="block text-sm font-semibold text-slate-700 mb-2">Seleccionar mes</label>
+            <div className="flex gap-2 mb-4">
+              {months.map((month) => (
                 <button
-                  key={date.toISOString()}
-                  onClick={() => handleDateSelect(date)}
-                  className={`p-2.5 rounded-xl text-center transition-all text-[10px] sm:text-[11px] ${
-                    selectedDate?.toDateString() === date.toDateString()
+                  key={month.toISOString()}
+                  onClick={() => setSelectedMonth(month)}
+                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+                    isSameMonth(month, selectedMonth)
                       ? 'bg-sky-600 text-white shadow-md'
                       : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
                   }`}
                 >
+                  {format(month, 'MMMM yyyy', { locale: es })}
+                </button>
+              ))}
+            </div>
+
+            <label className="block text-sm font-semibold text-slate-700 mb-2">Nueva fecha</label>
+            <div className="grid grid-cols-7 gap-1.5">
+              {monthDays.map((date) => (
+                <button
+                  key={date.toISOString()}
+                  onClick={() => handleDateSelect(date)}
+                  disabled={date < new Date()}
+                  className={`p-2 rounded-lg text-center text-xs transition-all ${
+                    selectedDate?.toDateString() === date.toDateString()
+                      ? 'bg-sky-600 text-white shadow-md'
+                      : date < new Date()
+                        ? 'bg-slate-50 text-slate-300 cursor-not-allowed'
+                        : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                  }`}
+                >
                   <p className="font-bold">{format(date, 'EEE', { locale: es }).slice(0, 3)}</p>
-                  <p className="text-base font-extrabold mt-0.5">{format(date, 'd')}</p>
+                  <p className="text-lg font-extrabold mt-0.5">{format(date, 'd')}</p>
                 </button>
               ))}
             </div>
@@ -210,6 +236,26 @@ export default function CalendarPage() {
     }
   }
 
+  const handleConfirm = async (apt) => {
+    try {
+      await api.patch(`/appointments/${apt.id}/status`, { status: 'confirmada' })
+      setSelectedApt(null)
+      setRefreshKey(k => k + 1)
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const handleNoShow = async (apt) => {
+    try {
+      await api.patch(`/appointments/${apt.id}/status`, { status: 'no_presento' })
+      setSelectedApt(null)
+      setRefreshKey(k => k + 1)
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
   const handleRescheduleSave = () => {
     setSelectedApt(null)
     setRefreshKey(k => k + 1)
@@ -234,6 +280,8 @@ export default function CalendarPage() {
           onReschedule={(apt) => {
             setRescheduleApt(apt)
           }}
+          onConfirm={handleConfirm}
+          onNoShow={handleNoShow}
         />
       )}
 
@@ -257,7 +305,7 @@ export default function CalendarPage() {
   )
 }
 
-function AppointmentDetailModal({ apt, onClose, onCancel, onReschedule }) {
+function AppointmentDetailModal({ apt, onClose, onCancel, onReschedule, onConfirm, onNoShow }) {
   if (!apt) return null
 
   return (
@@ -328,22 +376,54 @@ function AppointmentDetailModal({ apt, onClose, onCancel, onReschedule }) {
           </div>
         </div>
 
-        <div className="p-6 border-t border-slate-100 flex gap-3">
-          {apt.status !== 'cancelada' && apt.status !== 'completada' && (
+        <div className="p-6 border-t border-slate-100 flex flex-wrap gap-2">
+          {apt.status === 'pendiente' && (
             <>
+              <button
+                onClick={() => onConfirm?.(apt)}
+                className="flex-1 py-2.5 rounded-xl bg-green-600 text-white font-semibold hover:bg-green-700 transition-colors"
+              >
+                Confirmar
+              </button>
+              <button
+                onClick={() => onNoShow?.(apt)}
+                className="flex-1 py-2.5 rounded-xl bg-gray-600 text-white font-semibold hover:bg-gray-700 transition-colors"
+              >
+                No se presentó
+              </button>
+            </>
+          )}
+          {apt.status === 'confirmada' && (
+            <>
+              <button
+                onClick={() => onNoShow?.(apt)}
+                className="flex-1 py-2.5 rounded-xl bg-gray-600 text-white font-semibold hover:bg-gray-700 transition-colors"
+              >
+                No se presentó
+              </button>
               <button
                 onClick={() => onReschedule(apt)}
                 className="flex-1 py-2.5 rounded-xl bg-sky-600 text-white font-semibold hover:bg-sky-700 transition-colors"
               >
                 Reagendar
               </button>
-              <button
-                onClick={() => onCancel(apt)}
-                className="flex-1 py-2.5 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors"
-              >
-                Anular
-              </button>
             </>
+          )}
+          {(apt.status === 'no_presento' || apt.status === 'completada') && (
+            <button
+              onClick={() => onReschedule(apt)}
+              className="flex-1 py-2.5 rounded-xl bg-sky-600 text-white font-semibold hover:bg-sky-700 transition-colors"
+            >
+              Reagendar
+            </button>
+          )}
+          {apt.status !== 'cancelada' && apt.status !== 'no_presento' && (
+            <button
+              onClick={() => onCancel(apt)}
+              className="flex-1 py-2.5 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors"
+            >
+              Anular
+            </button>
           )}
           <button
             onClick={onClose}

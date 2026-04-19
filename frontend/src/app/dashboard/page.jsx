@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/context/AuthContext'
-import { format, addDays, isToday } from 'date-fns'
+import { format, addDays, addMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday } from 'date-fns'
 import { es } from 'date-fns/locale'
 import Link from 'next/link'
 
@@ -87,8 +87,14 @@ function RescheduleModal({ apt, onClose, onSave, api }) {
   const [loadingSlots, setLoadingSlots] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [selectedMonth, setSelectedMonth] = useState(new Date())
 
-  const dates = Array.from({ length: 14 }, (_, i) => addDays(new Date(), i)).filter(d => d.getDay() !== 0)
+  const months = Array.from({ length: 3 }, (_, i) => addMonths(new Date(), i))
+
+  const monthDays = eachDayOfInterval({
+    start: startOfMonth(selectedMonth),
+    end: endOfMonth(selectedMonth)
+  }).filter(d => d.getDay() !== 0 && d >= new Date())
 
   const loadSlots = async (date) => {
     setLoadingSlots(true)
@@ -163,20 +169,40 @@ function RescheduleModal({ apt, onClose, onSave, api }) {
 
           {/* Date picker */}
           <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-2">Seleccionar mes</label>
+            <div className="flex gap-2 mb-4">
+              {months.map((month) => (
+                <button
+                  key={month.toISOString()}
+                  onClick={() => setSelectedMonth(month)}
+                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+                    isSameMonth(month, selectedMonth)
+                      ? 'bg-sky-600 text-white shadow-md'
+                      : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                  }`}
+                >
+                  {format(month, 'MMMM yyyy', { locale: es })}
+                </button>
+              ))}
+            </div>
+
             <label className="block text-sm font-semibold text-slate-700 mb-2">Nueva fecha</label>
-            <div className="grid grid-cols-4 md:grid-cols-7 gap-2">
-              {dates.map((date) => (
+            <div className="grid grid-cols-7 gap-1.5">
+              {monthDays.map((date) => (
                 <button
                   key={date.toISOString()}
                   onClick={() => setSelectedDate(date)}
-                  className={`p-2.5 rounded-xl text-center transition-all text-[11px] ${
+                  disabled={date < new Date()}
+                  className={`p-2 rounded-lg text-center text-xs transition-all ${
                     selectedDate?.toDateString() === date.toDateString()
                       ? 'bg-sky-600 text-white shadow-md'
-                      : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-                  } ${isToday(date) ? 'ring-2 ring-sky-400 ring-offset-1' : ''}`}
+                      : date < new Date()
+                        ? 'bg-slate-50 text-slate-300 cursor-not-allowed'
+                        : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                  } ${isToday(date) && date >= new Date() ? 'ring-2 ring-sky-400 ring-offset-1' : ''}`}
                 >
                   <p className="font-bold">{format(date, 'EEE', { locale: es }).slice(0, 3)}</p>
-                  <p className="text-base font-extrabold mt-0.5">{format(date, 'd')}</p>
+                  <p className="text-lg font-extrabold mt-0.5">{format(date, 'd')}</p>
                 </button>
               ))}
             </div>
