@@ -28,7 +28,9 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     try {
+      console.log('Login attempt:', email)
       const response = await api.post('/auth/login', { email, password })
+      console.log('Login response:', response.data)
       const { token: newToken, user: newUser } = response.data
       
       localStorage.setItem('token', newToken)
@@ -40,9 +42,10 @@ export function AuthProvider({ children }) {
       
       return { success: true }
     } catch (error) {
+      console.error('Login error:', error.response?.data || error.message)
       return { 
         success: false, 
-        error: error.response?.data?.error || 'Error al iniciar sesión' 
+        error: error.response?.data?.error || error.response?.data?.message || 'Error al iniciar sesión' 
       }
     }
   }

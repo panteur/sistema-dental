@@ -1,14 +1,14 @@
 const express = require('express');
 const { body, param } = require('express-validator');
 const PatientController = require('../controllers/patient.controller');
-const { authenticate, isAdminOrReceptionist } = require('../middleware/auth.middleware');
+const { authenticate, isAdminOrReceptionist, isAdminOrDentistOrReceptionist } = require('../middleware/auth.middleware');
 const { validate } = require('../middleware/validate.middleware');
 
 const router = express.Router();
 
 router.use(authenticate);
 
-router.get('/', isAdminOrReceptionist, PatientController.getAll);
+router.get('/', isAdminOrDentistOrReceptionist, PatientController.getAll);
 
 router.get('/:id',
   validate([param('id').isInt()]),

@@ -8,8 +8,14 @@ class AppointmentController {
   static async getAll(req, res, next) {
     try {
       const { dentist_id, patient_id, status, date, date_from, date_to, limit } = req.query;
+      
+      let filterDentistId = dentist_id;
+      if (req.user.role === 'dentista' && !dentist_id) {
+        filterDentistId = req.user.id;
+      }
+      
       const appointments = await Appointment.findAll({
-        dentist_id,
+        dentist_id: filterDentistId,
         patient_id,
         status,
         date,
@@ -168,8 +174,13 @@ class AppointmentController {
         throw new AppError('Se requiere start_date y end_date', 400);
       }
 
+      let filterDentistId = dentist_id;
+      if (req.user.role === 'dentista' && !dentist_id) {
+        filterDentistId = req.user.id;
+      }
+
       const appointments = await Appointment.getByDateRange({ 
-        dentist_id: dentist_id || null, 
+        dentist_id: filterDentistId || null, 
         start_date, 
         end_date 
       });
@@ -182,7 +193,13 @@ class AppointmentController {
   static async getStats(req, res, next) {
     try {
       const { dentist_id, date_from, date_to } = req.query;
-      const stats = await Appointment.getStats({ dentist_id, date_from, date_to });
+      
+      let filterDentistId = dentist_id;
+      if (req.user.role === 'dentista' && !dentist_id) {
+        filterDentistId = req.user.id;
+      }
+      
+      const stats = await Appointment.getStats({ dentist_id: filterDentistId, date_from, date_to });
       res.json({ stats });
     } catch (error) {
       next(error);
@@ -197,7 +214,12 @@ class AppointmentController {
         throw new AppError('Se requiere date', 400);
       }
 
-      const appointments = await Appointment.findAll({ dentist_id, date });
+      let filterDentistId = dentist_id;
+      if (req.user.role === 'dentista' && !dentist_id) {
+        filterDentistId = req.user.id;
+      }
+
+      const appointments = await Appointment.findAll({ dentist_id: filterDentistId, date });
       res.json({ appointments });
     } catch (error) {
       next(error);

@@ -19,11 +19,12 @@ export default function LoginPage() {
     setLoading(true)
 
     const result = await login(email, password)
+    console.log('Login result:', result)
     
     if (result.success) {
       router.push('/dashboard')
     } else {
-      setError(result.error)
+      setError(result.error || 'Error al iniciar sesión')
     }
     
     setLoading(false)
