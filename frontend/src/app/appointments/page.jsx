@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext'
 import Link from 'next/link'
 import { format, addDays, addMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, isToday } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { formatRut, validateRut, cleanRut, formatPhone, formatPhoneForDB } from '@/utils/rut'
+import { formatRut, validateRut, cleanRut, formatPhoneForDB } from '@/utils/rut'
 
 export default function AppointmentPage() {
   const { api } = useAuth()
@@ -109,7 +109,7 @@ export default function AppointmentPage() {
         setRutError('')
       }
     } else if (name === 'phone') {
-      setPatientData({ ...patientData, phone: formatPhone(value) })
+      setPatientData({ ...patientData, phone: value.replace(/[^0-9]/g, '').slice(0, 9) })
     } else {
       setPatientData({ ...patientData, [name]: value })
     }
@@ -533,9 +533,15 @@ export default function AppointmentPage() {
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-slate-700 mb-1.5">Teléfono *</label>
-                    <input type="tel" name="phone" required value={patientData.phone} onChange={handlePatientChange}
-                      className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-colors outline-none"
-                      placeholder="+56 9 1234 5678" />
+                    <div className="flex">
+                      <span className="inline-flex items-center px-4 py-3 rounded-l-xl border border-r-0 border-slate-200 bg-slate-50 text-slate-500 text-sm font-medium">
+                        +56
+                      </span>
+                      <input type="tel" name="phone" required value={patientData.phone} onChange={handlePatientChange}
+                        maxLength={9}
+                        className="flex-1 border border-slate-200 rounded-r-xl px-4 py-3 text-sm focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-colors outline-none"
+                        placeholder="9 1234 5678" />
+                    </div>
                   </div>
                 </div>
 

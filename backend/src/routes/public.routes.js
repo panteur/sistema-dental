@@ -19,7 +19,7 @@ router.post('/contact',
     try {
       const { name, email, phone, message } = req.body;
       
-      console.log('Contacto recibido:', { name, email, phone, message });
+      await emailService.sendContactEmail({ name, email, phone, message });
       
       res.status(201).json({
         message: 'Mensaje recibido correctamente',
@@ -184,10 +184,10 @@ router.get('/slots', async (req, res, next) => {
     });
     
     const bookedSlots = existingAppointments
-      .filter(a => a.status !== 'cancelada')
+      .filter(a => a.status === 'confirmada' || a.status === 'pendiente')
       .map(a => {
         const [h, m] = a.time.split(':').map(Number);
-        return { time: `${h}:${m.toString().padStart(2, '0')}`, duration: a.service_duration || 30 };
+        return { time: `${h}:${m.toString().padStart(2, '0')}`, duration: a.service_duration || a.duration || 30 };
       });
 
     const slots = [];

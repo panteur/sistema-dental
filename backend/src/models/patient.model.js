@@ -3,7 +3,7 @@ const { query } = require('../config/database');
 class Patient {
   static async create(patientData) {
     const result = await query(
-      `INSERT INTO patients (rut, name, last_name, email, phone, address, date_of_birth, gender, notes, created_at) 
+      `INSERT INTO patients (dni, name, last_name, email, phone, address, date_of_birth, gender, notes, created_at) 
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
       [
         patientData.rut || patientData.dni,
@@ -26,12 +26,12 @@ class Patient {
   }
 
   static async findByDni(dni) {
-    const patients = await query('SELECT * FROM patients WHERE rut = ?', [dni]);
+    const patients = await query('SELECT * FROM patients WHERE dni = ?', [dni]);
     return patients[0] || null;
   }
 
   static async findByRut(rut) {
-    const patients = await query('SELECT * FROM patients WHERE rut = ?', [rut]);
+    const patients = await query('SELECT * FROM patients WHERE dni = ?', [rut]);
     return patients[0] || null;
   }
 

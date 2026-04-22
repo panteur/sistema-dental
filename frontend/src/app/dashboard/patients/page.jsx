@@ -101,6 +101,7 @@ export default function PatientsPage() {
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '-'
+    if (!dateStr.includes('T')) return format(new Date(dateStr + 'T12:00:00'), "d 'de' MMMM yyyy", { locale: es })
     const date = parseISO(dateStr)
     return isValid(date) ? format(date, "d 'de' MMMM yyyy", { locale: es }) : dateStr
   }

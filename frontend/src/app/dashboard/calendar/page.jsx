@@ -1,10 +1,15 @@
 'use client'
-
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '@/context/AuthContext'
-import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths } from 'date-fns'
+import { format, eachDayOfInterval, startOfMonth, endOfMonth, isSameDay, isToday, parseISO, isValid, addMonths, subMonths } from 'date-fns'
 import { es } from 'date-fns/locale'
 import CalendarView from '@/components/CalendarView'
+
+const formatDateLocal = (dateStr) => {
+  if (!dateStr) return '-'
+  const [y, m, d] = dateStr.split('T')[0].split('-')
+  return format(new Date(y, m - 1, d), "d 'de' MMMM yyyy", { locale: es })
+}
 
 function CancelDialog({ apt, onClose, onConfirm }) {
   return (
@@ -22,7 +27,7 @@ function CancelDialog({ apt, onClose, onConfirm }) {
             {apt.patient_name} {apt.patient_last_name}
           </p>
           <p className="text-sm text-slate-400">
-            {format(new Date(apt.date), "d 'de' MMMM yyyy", { locale: es })} — {apt.time?.substring(0, 5)}
+            {formatDateLocal(apt.date)} — {apt.time?.substring(0, 5)}
           </p>
         </div>
         <div className="flex gap-3 mt-6">
@@ -118,7 +123,7 @@ function RescheduleModal({ apt, onClose, onSave, api }) {
           <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 text-sm">
             <p className="text-amber-800 font-semibold mb-1">Cita actual:</p>
             <p className="text-amber-700">
-              {format(new Date(apt.date), "d 'de' MMMM yyyy", { locale: es })} — {apt.time?.substring(0, 5)}
+              {formatDateLocal(apt.date)} — {apt.time?.substring(0, 5)}
             </p>
           </div>
 
@@ -334,7 +339,7 @@ function AppointmentDetailModal({ apt, onClose, onCancel, onReschedule, onConfir
             <div>
               <p className="text-xs text-slate-500 mb-1">Fecha</p>
               <p className="font-medium text-slate-900">
-                {format(new Date(apt.date), "d 'de' MMMM yyyy", { locale: es })}
+                {formatDateLocal(apt.date)}
               </p>
             </div>
             <div>

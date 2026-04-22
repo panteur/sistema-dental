@@ -4,6 +4,8 @@ const dotenv = require('dotenv');
 
 dotenv.config();
 
+process.env.TZ = 'America/Santiago';
+
 const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
 const patientRoutes = require('./routes/patient.routes');

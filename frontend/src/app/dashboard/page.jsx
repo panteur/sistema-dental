@@ -8,6 +8,12 @@ import Link from 'next/link'
 
 const ROLES = { ADMIN: 'admin', DENTIST: 'dentista', RECEPTIONIST: 'recepcionista' }
 
+const formatDateLocal = (dateStr) => {
+  if (!dateStr) return '-'
+  const [y, m, d] = dateStr.split('T')[0].split('-')
+  return format(new Date(y, m - 1, d), "d 'de' MMMM yyyy", { locale: es })
+}
+
 function StatusBadge({ status }) {
   const styles = {
     pendiente: 'bg-amber-50 text-amber-700 border-amber-200',
@@ -63,7 +69,7 @@ function CancelDialog({ apt, onClose, onConfirm }) {
             {apt.patient_name} {apt.patient_last_name}
           </p>
           <p className="text-sm text-slate-400">
-            {format(new Date(apt.date), "d 'de' MMMM yyyy", { locale: es })} — {apt.time?.substring(0, 5)}
+            {formatDateLocal(apt.date)} — {apt.time?.substring(0, 5)}
           </p>
         </div>
         <div className="flex gap-3 mt-6">
@@ -163,7 +169,7 @@ function RescheduleModal({ apt, onClose, onSave, api }) {
           <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 text-sm">
             <p className="text-amber-800 font-semibold mb-1">Cita actual:</p>
             <p className="text-amber-700">
-              {format(new Date(apt.date), "d 'de' MMMM yyyy", { locale: es })} — {apt.time?.substring(0, 5)}
+              {formatDateLocal(apt.date)} — {apt.time?.substring(0, 5)}
             </p>
           </div>
 
@@ -285,7 +291,7 @@ function AppointmentCard({ apt, onCancel, onReschedule, onComplete, onMarkNoShow
         </div>
         <div className="flex items-center gap-3 sm:gap-4 flex-wrap sm:flex-nowrap">
           <div className="text-right">
-            <p className="text-sm font-medium text-slate-800">{format(new Date(apt.date), "d MMM yyyy", { locale: es })}</p>
+            <p className="text-sm font-medium text-slate-800">{formatDateLocal(apt.date)}</p>
             <p className="text-xs text-slate-500">{apt.time?.substring(0, 5)}</p>
           </div>
           <div className="text-right hidden sm:block">

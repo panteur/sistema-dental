@@ -39,20 +39,23 @@ export function formatPhone(value) {
   const cleaned = value.replace(/[^0-9]/g, '')
   if (!cleaned) return ''
   if (cleaned.length <= 9) {
-    if (cleaned.length <= 4) return cleaned
-    if (cleaned.length <= 8) return `${cleaned.slice(0, 4)} ${cleaned.slice(4)}`
-    return `9 ${cleaned.slice(1, 5)} ${cleaned.slice(5)}`
+    if (cleaned.length <= 4) return `+56 ${cleaned}`
+    if (cleaned.length <= 8) return `+56 ${cleaned.slice(0, 4)} ${cleaned.slice(4)}`
+    return `+56 ${cleaned.slice(0, 4)} ${cleaned.slice(4, 8)} ${cleaned.slice(8)}`
   }
   const num = cleaned.slice(-9)
-  return `9 ${num.slice(1, 5)} ${num.slice(5)}`
+  return `+56 ${num.slice(0, 4)} ${num.slice(4, 8)} ${num.slice(8)}`
 }
 
 export function cleanPhone(value) {
   if (!value) return ''
-  return value.replace(/[^0-9]/g, '').slice(-9)
+  const cleaned = value.replace(/[^0-9]/g, '')
+  const num = cleaned.slice(-9)
+  return num.startsWith('9') ? num : cleaned.slice(-9)
 }
 
 export function formatPhoneForDB(value) {
   const cleaned = cleanPhone(value)
+  if (!cleaned) return ''
   return `+56 ${cleaned}`
 }

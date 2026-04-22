@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.10:4000/api'
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api'
 
 /* ─── useInView hook ─── */
 function useInView(options = {}) {
@@ -146,7 +146,7 @@ export default function HomePage() {
       const res = await fetch(`${API_URL}/public/contact`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ ...formData, phone: `+56 ${formData.phone}` }),
       })
       if (res.ok) {
         setFormStatus({ type: 'success', message: 'Mensaje enviado correctamente. Te contactaremos pronto.' })
@@ -562,12 +562,19 @@ export default function HomePage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">Teléfono</label>
-                  <input
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-colors outline-none"
-                    placeholder="+56 9 0000 0000"
-                  />
+                  <div className="flex">
+                    <span className="inline-flex items-center px-4 py-3 rounded-l-xl border border-r-0 border-slate-200 bg-slate-50 text-slate-500 text-sm font-medium">
+                      +56
+                    </span>
+                    <input
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/[^0-9]/g, '').slice(0, 9) })}
+                      className="flex-1 border border-slate-200 rounded-r-xl px-4 py-3 text-sm focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-colors outline-none"
+                      placeholder="9 1234 5678"
+                      maxLength={9}
+                    />
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">Mensaje</label>

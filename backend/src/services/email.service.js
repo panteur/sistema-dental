@@ -13,6 +13,7 @@ const transporter = nodemailer.createTransport({
 const CLINIC_NAME = 'Clínica Dental Sonrisa Perfecta';
 const CLINIC_PHONE = process.env.CLINIC_PHONE || '(555) 123-4567';
 const CLINIC_EMAIL = process.env.SMTP_USER || 'citas@clinicadental.com';
+const CONTACT_EMAIL = process.env.CONTACT_EMAIL || 'sservex@gmail.com';
 
 function formatDate(dateStr) {
   const date = new Date(dateStr);
@@ -254,10 +255,73 @@ async function sendPasswordChangedEmail(user) {
   await sendEmail(user.email, subject, html);
 }
 
+async function sendContactEmail(data) {
+  const { name, email, phone, message } = data;
+  
+  const subject = `Nuevo mensaje de contacto - ${name}`;
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #1a1a2e;">
+      <div style="background: #0f4c75; padding: 24px; text-align: center;">
+        <h1 style="color: white; margin: 0; font-size: 24px;">${CLINIC_NAME}</h1>
+        <p style="color: #bbe1fa; margin: 4px 0 0;">Nuevo mensaje de contacto</p>
+      </div>
+      <div style="padding: 32px 24px;">
+        <div style="background: #f8f9fa; border-radius: 8px; padding: 20px; margin: 24px 0; border-left: 4px solid #0f4c75;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 8px 0; color: #666; font-size: 14px;">Nombre</td>
+              <td style="padding: 8px 0; font-weight: bold; font-size: 14px; text-align: right;">${name}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #666; font-size: 14px;">Email</td>
+              <td style="padding: 8px 0; font-weight: bold; font-size: 14px; text-align: right;">${email || '-'}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #666; font-size: 14px;">Teléfono</td>
+              <td style="padding: 8px 0; font-weight: bold; font-size: 14px; text-align: right;">${phone || '-'}</td>
+            </tr>
+          </table>
+        </div>
+        
+        <p style="font-size: 14px; font-weight: bold; color: #666; margin-bottom: 8px;">Mensaje:</p>
+        <p style="font-size: 14px; color: #333; line-height: 1.6;">${message}</p>
+        
+        <p style="font-size: 13px; color: #999; margin-top: 24px;">Recibido el ${new Date().toLocaleString('es-ES', { timeZone: 'America/Santiago' })}</p>
+      </div>
+      <div style="background: #f1f1f1; padding: 16px 24px; text-align: center; font-size: 12px; color: #999;">
+        ${CLINIC_NAME} · ${CLINIC_PHONE} · ${CLINIC_EMAIL}
+      </div>
+    </div>
+  `;
+
+  await sendEmail(CONTACT_EMAIL, subject, html);
+  await sendEmail(email, `Recibimos tu mensaje - ${CLINIC_NAME}`, `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #1a1a2e;">
+      <div style="background: #27ae60; padding: 24px; text-align: center;">
+        <h1 style="color: white; margin: 0; font-size: 24px;">${CLINIC_NAME}</h1>
+        <p style="color: #d5f5e3; margin: 4px 0 0;">Recibimos tu mensaje</p>
+      </div>
+      <div style="padding: 32px 24px;">
+        <p style="font-size: 16px;">Hola <strong>${name}</strong>,</p>
+        <p style="font-size: 16px;">Recibimos tu mensaje exitosamente. Te responderemos a la brevedad.</p>
+        <div style="background: #f8f9fa; border-radius: 8px; padding: 20px; margin: 24px 0;">
+          <p style="font-size: 14px; font-weight: bold; color: #666; margin-bottom: 8px;">Tu mensaje:</p>
+          <p style="font-size: 14px; color: #333;">${message}</p>
+        </div>
+        <p style="font-size: 14px; color: #666;">¿Preguntas? Llámanos: <strong>${CLINIC_PHONE}</strong></p>
+      </div>
+      <div style="background: #f1f1f1; padding: 16px 24px; text-align: center; font-size: 12px; color: #999;">
+        ${CLINIC_NAME} · ${CLINIC_PHONE} · ${CLINIC_EMAIL}
+      </div>
+    </div>
+  `);
+}
+
 module.exports = {
   sendAppointmentConfirmation,
   sendAppointmentCancellation,
   sendAppointmentReschedule,
   sendPasswordResetEmail,
-  sendPasswordChangedEmail
+  sendPasswordChangedEmail,
+  sendContactEmail
 };

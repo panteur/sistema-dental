@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/context/AuthContext'
-import { formatRut, validateRut, cleanRut, formatPhone, formatPhoneForDB } from '@/utils/rut'
+import { formatRut, validateRut, cleanRut, formatPhoneForDB } from '@/utils/rut'
 
 export default function UsersPage() {
   const { api, user } = useAuth()
@@ -86,7 +86,7 @@ export default function UsersPage() {
         setRutError('')
       }
     } else if (name === 'phone') {
-      setFormData({ ...formData, phone: formatPhone(value) })
+      setFormData({ ...formData, phone: value.replace(/[^0-9]/g, '').slice(0, 9) })
     } else {
       setFormData({ ...formData, [name]: value })
     }
@@ -373,14 +373,20 @@ export default function UsersPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Teléfono
                 </label>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
-                  placeholder="+56 9 1234 5678"
-                />
+                <div className="flex">
+                  <span className="inline-flex items-center px-4 py-2 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
+                    +56
+                  </span>
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    maxLength={9}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-primary-500 outline-none"
+                    placeholder="9 1234 5678"
+                  />
+                </div>
               </div>
 
               {formData.role === 'dentista' && (
