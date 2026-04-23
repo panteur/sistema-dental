@@ -6,7 +6,7 @@ import axios from 'axios'
 const AuthContext = createContext()
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.10:4000/api',
+  baseURL: process.env.NEXT_PUBLIC_API_URL ? `${process.env.NEXT_PUBLIC_API_URL}/api` : 'http://localhost:4000/api',
 })
 
 export function AuthProvider({ children }) {
