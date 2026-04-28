@@ -96,7 +96,7 @@ class ScheduleController {
         throw new AppError('Se requiere dentist_id y date', 400);
       }
 
-      const dayOfWeek = new Date(date).getDay();
+      const dayOfWeek = new Date(date + 'T00:00:00').getDay();
       const schedule = await Schedule.findByDay(parseInt(dentist_id), dayOfWeek);
       
       if (!schedule) {

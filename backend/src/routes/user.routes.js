@@ -34,6 +34,12 @@ router.put('/:id',
   UserController.update
 );
 
+router.patch('/:id/toggle-active',
+  isAdmin,
+  validate([param('id').isInt()]),
+  UserController.toggleActive
+);
+
 router.delete('/:id',
   isAdmin,
   validate([param('id').isInt()]),

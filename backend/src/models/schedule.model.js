@@ -40,6 +40,13 @@ class Schedule {
     );
   }
 
+  static async findByDentist(dentistId) {
+    return query(
+      `SELECT * FROM schedules WHERE user_id = ? AND active = true ORDER BY day_of_week`,
+      [dentistId]
+    );
+  }
+
   static async findByDay(userId, dayOfWeek) {
     const schedules = await query(
       `SELECT * FROM schedules WHERE user_id = ? AND day_of_week = ? AND active = true`,

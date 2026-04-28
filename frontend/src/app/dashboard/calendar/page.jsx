@@ -51,6 +51,7 @@ function RescheduleModal({ apt, onClose, onSave, api }) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [selectedMonth, setSelectedMonth] = useState(new Date())
+  const [manualTime, setManualTime] = useState(false)
 
   const months = Array.from({ length: 3 }, (_, i) => addMonths(new Date(), i))
 
@@ -169,10 +170,29 @@ function RescheduleModal({ apt, onClose, onSave, api }) {
 
           {selectedDate && (
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
-                Nueva hora {loadingSlots && <span className="text-slate-400 font-normal">(Cargando...)</span>}
-              </label>
-              {availableSlots.length > 0 ? (
+              <div className="flex items-center gap-3 mb-2">
+                <label className="block text-sm font-semibold text-slate-700">
+                  Nueva hora {loadingSlots && <span className="text-slate-400 font-normal">(Cargando...)</span>}
+                </label>
+                <label className="flex items-center gap-1 text-xs text-slate-500 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={manualTime}
+                    onChange={(e) => setManualTime(e.target.checked)}
+                    className="w-3 h-3 rounded"
+                  />
+                  Manual
+                </label>
+              </div>
+              
+              {manualTime ? (
+                <input
+                  type="time"
+                  value={selectedTime || ''}
+                  onChange={(e) => setSelectedTime(e.target.value)}
+                  className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none"
+                />
+              ) : availableSlots.length > 0 ? (
                 <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
                   {availableSlots.map((slot) => (
                     <button

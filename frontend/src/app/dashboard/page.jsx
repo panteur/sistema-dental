@@ -94,6 +94,7 @@ function RescheduleModal({ apt, onClose, onSave, api }) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [selectedMonth, setSelectedMonth] = useState(new Date())
+  const [manualTime, setManualTime] = useState(false)
 
   const months = Array.from({ length: 3 }, (_, i) => addMonths(new Date(), i))
 
@@ -217,10 +218,29 @@ function RescheduleModal({ apt, onClose, onSave, api }) {
           {/* Time slots */}
           {selectedDate && (
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">
-                Nueva hora {loadingSlots && <span className="text-slate-400 font-normal">(Cargando...)</span>}
-              </label>
-              {availableSlots.length > 0 ? (
+              <div className="flex items-center gap-3 mb-2">
+                <label className="block text-sm font-semibold text-slate-700">
+                  Nueva hora {loadingSlots && <span className="text-slate-400 font-normal">(Cargando...)</span>}
+                </label>
+                <label className="flex items-center gap-1 text-xs text-slate-500 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={manualTime}
+                    onChange={(e) => setManualTime(e.target.checked)}
+                    className="w-3 h-3 rounded"
+                  />
+                  Manual
+                </label>
+              </div>
+              
+              {manualTime ? (
+                <input
+                  type="time"
+                  value={selectedTime || ''}
+                  onChange={(e) => setSelectedTime(e.target.value)}
+                  className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none"
+                />
+              ) : availableSlots.length > 0 ? (
                 <div className="grid grid-cols-5 md:grid-cols-6 gap-2">
                   {availableSlots.map((slot) => (
                     <button
@@ -410,41 +430,35 @@ function AdminDashboard({ api }) {
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead>
-              <tr className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider bg-slate-50">
-                <th className="px-6 py-3">Nombre</th>
-                <th className="px-6 py-3">Email</th>
-                <th className="px-6 py-3">Especialidad</th>
-                <th className="px-6 py-3">Rol</th>
-                <th className="px-6 py-3">Estado</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {users.slice(0, 8).map((u) => (
-                <tr key={u.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center font-bold text-sm">
-                        {u.name?.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                      </div>
-                      <span className="font-medium text-slate-900 text-sm">{u.name}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-slate-500">{u.email}</td>
-                  <td className="px-6 py-4 text-sm text-slate-500">{u.specialty || '—'}</td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${roleColors[u.role] || 'bg-slate-100 text-slate-600'}`}>
-                      {roleLabels[u.role] || u.role}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${u.active !== false ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
-                      {u.active !== false ? 'Activo' : 'Inactivo'}
-                    </span>
-                  </td>
+              <thead>
+                <tr className="text-left text-xs font-medium text-slate-500 uppercase tracking-wider bg-slate-50">
+                  <th className="px-6 py-3">Nombre</th>
+                  <th className="px-6 py-3">Email</th>
+                  <th className="px-6 py-3">Especialidad</th>
+                  <th className="px-6 py-3">Rol</th>
                 </tr>
-              ))}
-            </tbody>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {users.slice(0, 8).map((u) => (
+                  <tr key={u.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center font-bold text-sm">
+                          {u.name?.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                        </div>
+                        <span className="font-medium text-slate-900 text-sm">{u.name}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-slate-500">{u.email}</td>
+                    <td className="px-6 py-4 text-sm text-slate-500">{u.specialty || '—'}</td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${roleColors[u.role] || 'bg-slate-100 text-slate-600'}`}>
+                        {roleLabels[u.role] || u.role}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
           </table>
           {users.length === 0 && <p className="text-center py-12 text-slate-400 text-sm">No hay usuarios registrados.</p>}
         </div>

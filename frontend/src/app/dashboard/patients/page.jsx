@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/context/AuthContext'
-import { format, parseISO, isValid, addDays } from 'date-fns'
+import { format, parseISO, isValid, addDays, addMonths, startOfMonth, endOfMonth, eachDayOfInterval, eachMonthOfInterval, isSameMonth, isSameDay, isToday } from 'date-fns'
 import { es } from 'date-fns/locale'
 
 const statusColors = {
@@ -33,10 +33,31 @@ export default function PatientsPage() {
   const [rescheduleData, setRescheduleData] = useState({ date: '', time: '' })
   const [rescheduleLoading, setRescheduleLoading] = useState(false)
   const [selectedAppointment, setSelectedAppointment] = useState(null)
+  const [rescheduleMonth, setRescheduleMonth] = useState(new Date())
+  const [rescheduleSlots, setRescheduleSlots] = useState([])
+  const [loadingSlots, setLoadingSlots] = useState(false)
+  const [manualTime, setManualTime] = useState(false)
+  const [dentists, setDentists] = useState([])
+
+  const months = Array.from({ length: 3 }, (_, i) => addMonths(new Date(), i))
+  const monthDays = eachDayOfInterval({
+    start: startOfMonth(rescheduleMonth),
+    end: endOfMonth(rescheduleMonth)
+  }).filter(d => d.getDay() !== 0 && d >= new Date())
 
   useEffect(() => {
     loadPatients()
+    loadDentists()
   }, [])
+
+  const loadDentists = async () => {
+    try {
+      const res = await api.get('/public/dentists')
+      setDentists(res.data.dentists || [])
+    } catch (err) {
+      console.error('Error loading dentists:', err)
+    }
+  }
 
   const loadPatients = async () => {
     setLoading(true)
@@ -93,6 +114,28 @@ export default function PatientsPage() {
       alert(err.response?.data?.message || 'Error al reagendar la cita')
     }
     setRescheduleLoading(false)
+  }
+
+  const loadRescheduleSlots = async (date) => {
+    const apt = appointments.find(a => a.id === showRescheduleModal)
+    if (!apt?.dentist_id) return
+    
+    setLoadingSlots(true)
+    try {
+      const dateStr = format(date, 'yyyy-MM-dd')
+      const res = await api.get(`/public/slots?dentist_id=${apt.dentist_id}&date=${dateStr}`)
+      setRescheduleSlots(res.data.slots || [])
+    } catch (err) {
+      console.error('Error loading slots:', err)
+      setRescheduleSlots([])
+    }
+    setLoadingSlots(false)
+  }
+
+  const handleRescheduleDateSelect = (date) => {
+    const dateStr = format(date, 'yyyy-MM-dd')
+    setRescheduleData({ ...rescheduleData, date: dateStr, time: '' })
+    loadRescheduleSlots(date)
   }
 
   const filteredPatients = patients.filter(p => 
@@ -285,7 +328,12 @@ export default function PatientsPage() {
                             </button>
                           )}
                           <button
-                            onClick={(e) => { e.stopPropagation(); setShowRescheduleModal(apt.id) }}
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              setShowRescheduleModal(apt.id)
+                              setRescheduleMonth(new Date())
+                              setManualTime(false)
+                            }}
                             className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white text-sm py-2 px-3 rounded-lg transition"
                           >
                             Reagendar
@@ -317,24 +365,110 @@ export default function PatientsPage() {
 
                       {/* Reschedule Modal for this appointment */}
                       {showRescheduleModal === apt.id && (
-                        <div className="mt-3 p-3 bg-white rounded-lg border border-gray-200">
-                          <p className="text-sm font-medium text-gray-700 mb-2">Nueva fecha y hora:</p>
-                          <div className="flex gap-2 mb-2">
-                            <input
-                              type="date"
-                              min={format(new Date(), 'yyyy-MM-dd')}
-                              value={rescheduleData.date}
-                              onChange={(e) => setRescheduleData({ ...rescheduleData, date: e.target.value })}
-                              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                            />
-                            <input
-                              type="time"
-                              value={rescheduleData.time}
-                              onChange={(e) => setRescheduleData({ ...rescheduleData, time: e.target.value })}
-                              className="w-24 border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                            />
+                        <div className="mt-3 p-4 bg-white rounded-lg border border-gray-200 space-y-4">
+                          <p className="text-sm font-semibold text-gray-800">Nueva fecha y hora:</p>
+                          
+                          {/* Month selector */}
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1.5">Mes</label>
+                            <div className="flex gap-1">
+                              {months.map((month) => (
+                                <button
+                                  key={month.toISOString()}
+                                  onClick={() => setRescheduleMonth(month)}
+                                  className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-medium transition-all ${
+                                    isSameMonth(month, rescheduleMonth)
+                                      ? 'bg-sky-600 text-white'
+                                      : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                                  }`}
+                                >
+                                  {format(month, 'MMM', { locale: es })}
+                                </button>
+                              ))}
+                            </div>
                           </div>
-                          <div className="flex gap-2">
+
+                          {/* Date picker */}
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1.5">Fecha</label>
+                            <div className="grid grid-cols-7 gap-1">
+                              {monthDays.map((date) => {
+                                const selectedDateObj = rescheduleData.date ? new Date(rescheduleData.date + 'T00:00:00') : null
+                                return (
+                                <button
+                                  key={date.toISOString()}
+                                  onClick={() => handleRescheduleDateSelect(date)}
+                                  disabled={date < new Date()}
+                                  className={`p-1.5 rounded-lg text-center text-xs transition-all ${
+                                    selectedDateObj && isSameDay(date, selectedDateObj)
+                                      ? 'bg-sky-600 text-white shadow-md'
+                                      : date < new Date()
+                                        ? 'bg-gray-50 text-gray-300 cursor-not-allowed'
+                                        : 'bg-gray-100 hover:bg-sky-100 text-gray-700 hover:text-sky-700'
+                                  } ${isToday(date) && date >= new Date() ? 'ring-2 ring-sky-400 ring-offset-1' : ''}`}
+                                >
+                                  <p className="font-medium text-[10px]">{format(date, 'EEE', { locale: es }).replace('.', '')}</p>
+                                  <p className="text-sm font-bold mt-0.5">{format(date, 'd')}</p>
+                                </button>
+                              )})}
+                            </div>
+                          </div>
+
+                          {/* Manual time toggle */}
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              id="manualTimeToggle"
+                              checked={manualTime}
+                              onChange={(e) => setManualTime(e.target.checked)}
+                              className="w-4 h-4 text-sky-600 rounded"
+                            />
+                            <label htmlFor="manualTimeToggle" className="text-xs text-gray-600 cursor-pointer">
+                              Ingresar hora manualmente
+                            </label>
+                          </div>
+
+                          {/* Time slots or manual input */}
+                          {!manualTime && rescheduleData.date && (
+                            <div>
+                              <label className="block text-xs font-medium text-gray-600 mb-1.5">Hora</label>
+                              {loadingSlots ? (
+                                <div className="text-center py-3 text-gray-400 text-xs">Cargando...</div>
+                              ) : rescheduleSlots.length === 0 ? (
+                                <div className="text-center py-3 text-gray-400 text-xs">No hay horarios disponibles</div>
+                              ) : (
+                                <div className="grid grid-cols-4 gap-1">
+                                  {rescheduleSlots.map((slot) => (
+                                    <button
+                                      key={slot}
+                                      onClick={() => setRescheduleData({ ...rescheduleData, time: slot })}
+                                      className={`py-1.5 px-2 rounded-lg text-xs font-medium transition-all ${
+                                        rescheduleData.time === slot
+                                          ? 'bg-sky-600 text-white'
+                                          : 'bg-gray-100 hover:bg-sky-100 text-gray-700'
+                                      }`}
+                                    >
+                                      {slot}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {manualTime && (
+                            <div>
+                              <label className="block text-xs font-medium text-gray-600 mb-1.5">Hora</label>
+                              <input
+                                type="time"
+                                value={rescheduleData.time}
+                                onChange={(e) => setRescheduleData({ ...rescheduleData, time: e.target.value })}
+                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                              />
+                            </div>
+                          )}
+
+                          <div className="flex gap-2 pt-2">
                             <button
                               onClick={(e) => { e.stopPropagation(); handleReschedule(apt.id) }}
                               disabled={rescheduleLoading || !rescheduleData.date || !rescheduleData.time}
@@ -343,7 +477,13 @@ export default function PatientsPage() {
                               {rescheduleLoading ? 'Guardando...' : 'Guardar'}
                             </button>
                             <button
-                              onClick={(e) => { e.stopPropagation(); setShowRescheduleModal(null); setRescheduleData({ date: '', time: '' }) }}
+                              onClick={(e) => { 
+                                e.stopPropagation(); 
+                                setShowRescheduleModal(null); 
+                                setRescheduleData({ date: '', time: '' });
+                                setManualTime(false);
+                                setRescheduleMonth(new Date());
+                              }}
                               className="flex-1 bg-gray-500 hover:bg-gray-600 text-white text-sm py-2 rounded-lg transition"
                             >
                               Cancelar

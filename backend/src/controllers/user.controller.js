@@ -71,6 +71,21 @@ class UserController {
     }
   }
 
+  static async toggleActive(req, res, next) {
+    try {
+      const user = await User.findById(req.params.id);
+      if (!user) {
+        throw new AppError('Usuario no encontrado', 404);
+      }
+
+      await User.toggleActive(req.params.id);
+      const updatedUser = await User.findById(req.params.id);
+      res.json({ message: 'Estado actualizado', user: updatedUser });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async getDentists(req, res, next) {
     try {
       const { ROLES } = require('../config/constants');

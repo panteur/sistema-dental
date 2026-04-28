@@ -144,9 +144,26 @@ router.get('/services', async (req, res, next) => {
 router.get('/dentists', async (req, res, next) => {
   try {
     const User = require('../models/user.model');
+    const Schedule = require('../models/schedule.model');
     const { ROLES } = require('../config/constants');
     const dentists = await User.findAll({ role: ROLES.DENTIST });
+    
+    for (const dentist of dentists) {
+      const schedule = await Schedule.findByDentist(dentist.id);
+      dentist.schedule = schedule;
+    }
+    
     res.json({ dentists });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/dentists/:id/schedule', async (req, res, next) => {
+  try {
+    const Schedule = require('../models/schedule.model');
+    const schedule = await Schedule.findByDentist(parseInt(req.params.id));
+    res.json({ schedule });
   } catch (error) {
     next(error);
   }
@@ -167,7 +184,8 @@ router.get('/slots', async (req, res, next) => {
     const serviceDuration = service_id ? (await Service.findById(parseInt(service_id))?.duration || 30) : 30;
     const slotInterval = 30;
     
-    const dayOfWeek = new Date(date).getDay();
+    const dateObj = new Date(date + 'T00:00:00');
+    const dayOfWeek = dateObj.getDay();
     const schedule = await Schedule.findByDay(parseInt(dentist_id), dayOfWeek);
     
     if (!schedule) {

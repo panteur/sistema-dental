@@ -21,7 +21,7 @@ class User {
   }
 
   static async findById(id) {
-    const users = await query('SELECT id, rut, email, name, role, phone, specialty, created_at FROM users WHERE id = ?', [id]);
+    const users = await query('SELECT id, rut, email, name, role, phone, specialty, active, created_at FROM users WHERE id = ?', [id]);
     return users[0] || null;
   }
 
@@ -31,7 +31,7 @@ class User {
   }
 
   static async findAll(filters = {}) {
-    let sql = 'SELECT id, rut, email, name, role, phone, specialty, created_at FROM users WHERE 1=1';
+    let sql = 'SELECT id, rut, email, name, role, phone, specialty, active, created_at FROM users WHERE 1=1';
     const params = [];
 
     if (filters.role) {
@@ -78,11 +78,20 @@ class User {
       updates.push('password = ?');
       params.push(await bcrypt.hash(userData.password, 10));
     }
+    if (userData.active !== undefined) {
+      updates.push('active = ?');
+      params.push(userData.active);
+    }
 
     if (updates.length === 0) return false;
 
     params.push(id);
     const result = await query(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, params);
+    return result.affectedRows > 0;
+  }
+
+  static async toggleActive(id) {
+    const result = await query('UPDATE users SET active = NOT active WHERE id = ?', [id]);
     return result.affectedRows > 0;
   }
 

@@ -18,7 +18,8 @@ export default function UsersPage() {
     password: '',
     role: 'dentista',
     phone: '',
-    specialty: ''
+    specialty: '',
+    active: true
   })
   const [search, setSearch] = useState('')
   const [rutError, setRutError] = useState('')
@@ -57,7 +58,8 @@ export default function UsersPage() {
       password: '',
       role: userData.role,
       phone: userData.phone || '',
-      specialty: userData.specialty || ''
+      specialty: userData.specialty || '',
+      active: userData.active !== false
     })
     setRutError('')
     setShowModal(true)
@@ -116,6 +118,7 @@ export default function UsersPage() {
       }
 
       if (editingUser) {
+        data.active = formData.active
         await api.put(`/users/${editingUser.id}`, data)
       } else {
         if (!formData.password) {
@@ -147,6 +150,22 @@ export default function UsersPage() {
     } catch (err) {
       console.error('Error deleting user:', err)
       alert('Error al eliminar el usuario')
+    }
+  }
+
+  const toggleActive = async (id) => {
+    if (id === user.id) {
+      alert('No puedes cambiar tu propio estado')
+      return
+    }
+    try {
+      await api.patch(`/users/${id}/toggle-active`)
+      // Force reload
+      const res = await api.get(`/users`)
+      setUsers(res.data.users || [])
+    } catch (err) {
+      console.error('Error toggling active:', err)
+      alert('Error al cambiar estado del usuario')
     }
   }
 
@@ -212,12 +231,13 @@ export default function UsersPage() {
           ) : users.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead>
+<thead>
                   <tr className="text-left text-sm text-gray-500 border-b">
                     <th className="pb-3 font-medium">RUT</th>
                     <th className="pb-3 font-medium">Nombre</th>
                     <th className="pb-3 font-medium">Email</th>
                     <th className="pb-3 font-medium">Rol</th>
+                    <th className="pb-3 font-medium">Estado</th>
                     <th className="pb-3 font-medium">Teléfono</th>
                     <th className="pb-3 font-medium">Especialidad</th>
                     <th className="pb-3 font-medium">Acciones</th>
@@ -236,6 +256,15 @@ export default function UsersPage() {
                             {badge.label}
                           </span>
                         </td>
+                        <td className="py-4">
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            u.active === 0 || u.active === false || u.active === '0'
+                              ? 'bg-red-100 text-red-700'
+                              : 'bg-green-100 text-green-700'
+                          }`}>
+                            {u.active === 0 || u.active === false || u.active === '0' ? 'Bloqueado' : 'Activo'}
+                          </span>
+                        </td>
                         <td className="py-4 text-gray-600">{u.phone || '-'}</td>
                         <td className="py-4 text-gray-600">{u.specialty || '-'}</td>
                         <td className="py-4">
@@ -248,6 +277,25 @@ export default function UsersPage() {
                               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                               </svg>
+                            </button>
+                            <button
+                              onClick={() => toggleActive(u.id)}
+                              className={`p-2 rounded-lg transition ${
+                                u.active === 0 || u.active === false || u.active === '0'
+                                  ? 'text-green-600 hover:bg-green-50'
+                                  : 'text-red-600 hover:bg-red-50'
+                              }`}
+                              title={u.active === 0 || u.active === false || u.active === '0' ? 'Desbloquear' : 'Bloquear'}
+                            >
+                              {u.active === 0 || u.active === false || u.active === '0' ? (
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                              ) : (
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                              )}
                             </button>
                             {u.id !== user.id && (
                               <button
@@ -402,6 +450,21 @@ export default function UsersPage() {
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
                     placeholder="Ej: Ortodoncia, Endodoncia"
                   />
+                </div>
+              )}
+
+              {editingUser && (
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    id="activeToggle"
+                    checked={formData.active}
+                    onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
+                    className="w-4 h-4 text-green-600 rounded"
+                  />
+                  <label htmlFor="activeToggle" className="text-sm font-medium text-gray-700 cursor-pointer">
+                    {formData.active ? 'Usuario activo' : 'Usuario bloqueado'}
+                  </label>
                 </div>
               )}
 

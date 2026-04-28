@@ -53,6 +53,10 @@ class AuthController {
         throw new AppError('Credenciales inválidas', 401);
       }
 
+      if (user.active === 0 || user.active === false) {
+        throw new AppError('Usuario desactivado. Contacte al administrador', 401);
+      }
+
       const isValidPassword = await User.comparePassword(password, user.password);
       if (!isValidPassword) {
         throw new AppError('Credenciales inválidas', 401);

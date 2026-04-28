@@ -23,10 +23,12 @@ export default function AppointmentPage() {
   const [selectedMonth, setSelectedMonth] = useState(new Date())
 
   const months = Array.from({ length: 3 }, (_, i) => addMonths(new Date(), i))
+  const [dentistSchedule, setDentistSchedule] = useState([])
+  
   const monthDays = eachDayOfInterval({
     start: startOfMonth(selectedMonth),
     end: endOfMonth(selectedMonth)
-  }).filter(d => d.getDay() !== 0 && d >= new Date())
+  }).filter(d => d.getDay() !== 0 && d.getDay() !== 6 && d >= new Date())
 
   const [patientData, setPatientData] = useState({
     dni: '',
@@ -64,11 +66,31 @@ export default function AppointmentPage() {
       ])
       setServices(servicesRes.data.services || [])
       setDentists(dentistsRes.data.dentists || [])
+      if (dentistsRes.data.dentists?.length > 0 && !selectedDentist) {
+        setSelectedDentist(dentistsRes.data.dentists[0].id)
+      }
     } catch (err) {
       console.error('Error loading data:', err)
     } finally {
       setLoading(false)
     }
+  }
+
+  useEffect(() => {
+    loadInitialData()
+  }, [])
+
+  useEffect(() => {
+    if (selectedDentist) {
+      const dentist = dentists.find(d => d.id === selectedDentist)
+      setDentistSchedule(dentist?.schedule || [])
+    }
+  }, [selectedDentist, dentists])
+
+  const isDayAvailable = (date) => {
+    if (dentistSchedule.length === 0) return true
+    const dayOfWeek = date.getDay()
+    return dentistSchedule.some(s => s.day_of_week === dayOfWeek)
   }
 
   const loadSlots = async () => {
@@ -382,23 +404,27 @@ export default function AppointmentPage() {
               <div className="mb-6">
                 <label className="block text-sm font-semibold text-slate-700 mb-3">Fecha</label>
                 <div className="grid grid-cols-7 gap-1.5">
-                  {monthDays.map((date) => (
+                  {monthDays.map((date) => {
+                    const available = isDayAvailable(date)
+                    return (
                     <button
                       key={date.toISOString()}
                       onClick={() => { setSelectedDate(date); setSelectedTime(null); setAvailableSlots([]) }}
-                      disabled={date < new Date()}
+                      disabled={date < new Date() || !available}
                       className={`p-2 rounded-lg text-center text-xs transition-all ${
                         isSameDay(date, selectedDate)
                           ? 'bg-sky-600 text-white shadow-lg shadow-sky-500/30'
                           : date < new Date()
                             ? 'bg-slate-50 text-slate-300 cursor-not-allowed'
-                            : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                            : !available
+                              ? 'bg-slate-100 text-slate-300 cursor-not-allowed'
+                              : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
                       } ${isToday(date) && date >= new Date() ? 'ring-2 ring-sky-400 ring-offset-1' : ''}`}
                     >
                       <p className="font-bold">{format(date, 'EEE', { locale: es })}</p>
                       <p className="text-lg font-extrabold mt-0.5">{format(date, 'd')}</p>
                     </button>
-                  ))}
+                  )})}
                 </div>
               </div>
 
