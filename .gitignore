@@ -12,6 +12,9 @@ out/
 .env.test
 .env.production
 
+# PM2 ecosystem (contains secrets)
+ecosystem.config.js
+
 # Logs
 *.log
 npm-debug.log*
