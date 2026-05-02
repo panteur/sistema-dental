@@ -15,15 +15,30 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const storedToken = localStorage.getItem('token')
-    const storedUser = localStorage.getItem('user')
-    
-    if (storedToken && storedUser) {
-      setToken(storedToken)
-      setUser(JSON.parse(storedUser))
-      api.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`
+    const checkAuth = async () => {
+      const storedToken = localStorage.getItem('token')
+      
+      if (storedToken) {
+        try {
+          const response = await api.get('/auth/me', {
+            headers: { Authorization: `Bearer ${storedToken}` }
+          })
+          
+          setToken(storedToken)
+          setUser(response.data.user)
+          api.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`
+        } catch (error) {
+          console.log('Token inválido, limpiando sesión')
+          localStorage.removeItem('token')
+          localStorage.removeItem('user')
+          setToken(null)
+          setUser(null)
+        }
+      }
+      setLoading(false)
     }
-    setLoading(false)
+    
+    checkAuth()
   }, [])
 
   const login = async (email, password) => {
